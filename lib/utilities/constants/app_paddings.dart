@@ -1,0 +1,1 @@
+class AppPaddings { AppPaddings._(); }

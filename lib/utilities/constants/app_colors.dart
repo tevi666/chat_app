@@ -1,0 +1,1 @@
+class AppColors { AppColors._(); }
