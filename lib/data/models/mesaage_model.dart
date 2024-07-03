@@ -6,23 +6,28 @@ class Message {
   final DateTime timestamp;
   final String imageUrl;
 
-  Message({required this.senderId, required this.text, required this.timestamp, required this.imageUrl});
+  Message({
+    required this.senderId,
+    required this.text,
+    required this.timestamp,
+    required this.imageUrl,
+  });
 
   factory Message.fromFirestore(Map<String, dynamic> data) {
     return Message(
-      senderId: data['senderId'],
-      text: data['text'],
+      senderId: data['senderId'] ?? 'Unknown',
+      text: data['text'] ?? '',
       timestamp: (data['timestamp'] as Timestamp).toDate(),
-      imageUrl: data['imageUrl']
+      imageUrl: data['imageUrl'] ?? '',
     );
   }
-  
+
   Map<String, dynamic> toFirestore() {
     return {
       'senderId': senderId,
       'text': text,
       'timestamp': Timestamp.fromDate(timestamp),
-      'imageUrl': imageUrl
+      'imageUrl': imageUrl,
     };
   }
 }

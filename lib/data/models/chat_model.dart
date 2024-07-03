@@ -10,21 +10,8 @@ class Chat {
 
   factory Chat.fromFirestore(DocumentSnapshot doc) {
     var data = doc.data() as Map<String, dynamic>;
-    var messagesData = data['messages'] as List<dynamic>;
-    List<Message> messages =
-        messagesData.map((msg) => Message.fromFirestore(msg)).toList();
-
-    return Chat(
-      id: doc.id,
-      users: List<String>.from(data['users']),
-      messages: messages,
-    );
-  }
-  
-  Map<String, dynamic> toFirestore() {
-    return {
-      'users': users,
-      'messages': messages.map((msg) => msg.toFirestore()).toList(),
-    };
+    var users = List<String>.from(data['users'] ?? []);
+    var messages = (data['messages'] as List<dynamic>).map((msg) => Message.fromFirestore(msg)).toList();
+    return Chat(id: doc.id, users: users, messages: messages);
   }
 }

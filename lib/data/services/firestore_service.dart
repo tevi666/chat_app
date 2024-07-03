@@ -8,8 +8,14 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   Stream<List<Chat>> getChats() {
-    return _db.collection('chats').snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => Chat.fromFirestore(doc)).toList());
+    return _db.collection('chats').snapshots().map((snapshot) {
+      print('Fetched ${snapshot.docs.length} chats from Firestore');
+      return snapshot.docs.map((doc) {
+        var data = doc.data();
+        print('Chat data: $data');
+        return Chat.fromFirestore(doc);
+      }).toList();
+    });
   }
 
   Future<void> sendMessage(String chatId, String senderId, String text, {String? imageUrl}) async {
