@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:chat_app/data/models/chat_model.dart';
 import 'package:chat_app/data/services/firestore_service.dart';
 import 'package:chat_app/presentations/widgets/base_text.dart';
+import 'package:chat_app/screens/chat_screen.dart';
 import 'package:chat_app/utilities/constants/app_colors.dart';
 import 'package:chat_app/utilities/utils.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatListScreen extends StatefulWidget {
   final FirestoreService _firestoreService = FirestoreService();
@@ -18,9 +20,42 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   String searchQuery = "";
+  String? selectedUser = "Alex Row"; 
+
+  @override
+  void initState() {
+    super.initState();
+    _loginAsUser(selectedUser!); 
+  }
+
+  Future<void> _loginAsUser(String userName) async {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.signInAnonymously();
+      User? user = userCredential.user;
+
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'name': userName,
+          'isOnline': true,
+          'lastSeen': Timestamp.now(),
+        });
+      }
+    } catch (e) {
+      print('Login error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login error: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (selectedUser == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Padding(
@@ -80,7 +115,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 }).toList();
 
                 if (chats.isEmpty) {
-                  return const Center(child: BaseText(text: 'Нет пользователей, соответствующих поисковому запросу', color: AppColors.red));
+                  return const Center(child: Padding(
+                    padding: EdgeInsets.only(left: 0),
+                    child: BaseText(text: 'Нет пользователей, соответствующих поисковому запросу', color: AppColors.red, textAlign: TextAlign.center,),
+                  ));
                 }
 
                 List<Widget> userTiles = [];
@@ -91,7 +129,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     var avatarColor = getColorFromString(user, AppColors.colors);
                     var timeString = getMessageTime(chat.messages.last.timestamp);
 
-                    String messageText = (currentUser != null && chat.messages.last.senderId == currentUser!.uid)
+                    String messageText = (selectedUser != null && chat.messages.last.senderId == selectedUser)
                         ? 'Вы: ${chat.messages.last.text}'
                         : chat.messages.last.text;
 
@@ -107,11 +145,36 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             ),
                           ),
                           title: BaseText(text: user, fontSize: 18, color: Colors.black),
-                          subtitle: BaseText(text: messageText, color: AppColors.darkGray, fontSize: 14, fontFamily: 'Gilroy-M'),
+                          subtitle: RichText(
+                            text: TextSpan(
+                              children: [
+                                if (selectedUser != null && chat.messages.last.senderId == selectedUser)
+                                  const TextSpan(
+                                    text: 'Вы: ',
+                                    style: TextStyle(color: Color(0xFF2B333E)),
+                                  ),
+                                TextSpan(
+                                  text: chat.messages.last.text,
+                                  style: const TextStyle(color: AppColors.darkGray, fontSize: 14, fontFamily: 'Gilroy-M'),
+                                ),
+                              ],
+                            ),
+                          ),
                           trailing: BaseText(text: timeString, fontSize: 12, color: AppColors.darkGray, fontFamily: 'Gilroy-M'),
                           onTap: () async {
                             var userStatus = await widget._firestoreService.getUserStatus(user);
-                          
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  chatId: chat.id,
+                                  userName: user,
+                                  avatarColor: avatarColor,
+                                  isOnline: userStatus.isOnline,
+                                  lastSeen: userStatus.lastSeen,
+                                ),
+                              ),
+                            );
                           },
                         ),
                         const Padding(

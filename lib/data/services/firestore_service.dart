@@ -18,12 +18,13 @@ class FirestoreService {
     });
   }
 
-  Future<void> sendMessage(String chatId, String senderId, String text, {String? imageUrl}) async {
+  Future<void> sendMessage(String chatId, String senderId, String text, {String? imageUrl, String? audioUrl}) async {
     var message = Message(
       senderId: senderId,
       text: text,
       timestamp: DateTime.now(),
       imageUrl: imageUrl ?? '',
+      audioUrl: audioUrl ?? '',
     );
     return _db.collection('chats').doc(chatId).update({
       'messages': FieldValue.arrayUnion([message.toFirestore()]),

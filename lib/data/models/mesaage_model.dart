@@ -5,20 +5,23 @@ class Message {
   final String text;
   final DateTime timestamp;
   final String imageUrl;
+  final String audioUrl;
 
   Message({
     required this.senderId,
     required this.text,
     required this.timestamp,
-    required this.imageUrl,
+    this.imageUrl = '',
+    this.audioUrl = '',
   });
 
   factory Message.fromFirestore(Map<String, dynamic> data) {
     return Message(
-      senderId: data['senderId'] ?? 'Unknown',
-      text: data['text'] ?? '',
+      senderId: data['senderId'],
+      text: data['text'],
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       imageUrl: data['imageUrl'] ?? '',
+      audioUrl: data['audioUrl'] ?? '',
     );
   }
 
@@ -28,6 +31,7 @@ class Message {
       'text': text,
       'timestamp': Timestamp.fromDate(timestamp),
       'imageUrl': imageUrl,
+      'audioUrl': audioUrl,
     };
   }
 }
