@@ -1,12 +1,12 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:chat_app/data/models/chat_model.dart';
 import 'package:chat_app/data/services/firestore_service.dart';
 import 'package:chat_app/presentations/widgets/base_text.dart';
 import 'package:chat_app/screens/chat_screen.dart';
 import 'package:chat_app/utilities/constants/app_colors.dart';
 import 'package:chat_app/utilities/utils.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatListScreen extends StatefulWidget {
   final FirestoreService _firestoreService = FirestoreService();
@@ -20,12 +20,12 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   String searchQuery = "";
-  String? selectedUser = "Alex Row"; 
+  String? selectedUser = "Alex Row";
 
   @override
   void initState() {
     super.initState();
-    _loginAsUser(selectedUser!); 
+    _loginAsUser(selectedUser!);
   }
 
   Future<void> _loginAsUser(String userName) async {
@@ -50,12 +50,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (selectedUser == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Padding(
@@ -87,10 +81,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   searchQuery = value.toLowerCase();
                 });
               },
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.search,
-              enableSuggestions: true,
-              autocorrect: true,
             ),
           ),
           const Divider(height: 1, color: Color(0xffEDF2F6)),
@@ -102,11 +92,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  print('Error: ${snapshot.error}');
                   return const Center(child: BaseText(text: 'Ошибка загрузки данных', color: AppColors.red));
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  print('No available chats');
                   return const Center(child: BaseText(text: 'Нет доступных чатов', color: AppColors.red));
                 }
 
@@ -115,25 +103,33 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 }).toList();
 
                 if (chats.isEmpty) {
-                  return const Center(child: Padding(
-                    padding: EdgeInsets.only(left: 0),
-                    child: BaseText(text: 'Нет пользователей, соответствующих поисковому запросу', color: AppColors.red, textAlign: TextAlign.center,),
-                  ));
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 0),
+                      child: BaseText(
+                        text: 'Нет пользователей, соответствующих поисковому запросу',
+                        color: AppColors.red,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
                 }
 
-                List<Widget> userTiles = [];
-                for (var chat in chats) {
-                  try {
+                return ListView.builder(
+                  itemCount: chats.length,
+                  itemBuilder: (context, index) {
+                    var chat = chats[index];
                     var user = chat.users.firstWhere((user) => user != currentUser?.uid);
                     var initials = getInitials(user);
                     var avatarColor = getColorFromString(user, AppColors.colors);
                     var timeString = getMessageTime(chat.messages.last.timestamp);
 
-                    String messageText = (selectedUser != null && chat.messages.last.senderId == selectedUser)
-                        ? 'Вы: ${chat.messages.last.text}'
-                        : chat.messages.last.text;
+                    String messageText = chat.messages.last.text;
+                    if (messageText.length > 30) {
+                      messageText = messageText.substring(0, 30) + '...';
+                    }
 
-                    userTiles.add(Column(
+                    return Column(
                       children: [
                         ListTile(
                           leading: CircleAvatar(
@@ -154,7 +150,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                     style: TextStyle(color: Color(0xFF2B333E)),
                                   ),
                                 TextSpan(
-                                  text: chat.messages.last.text,
+                                  text: messageText,
                                   style: const TextStyle(color: AppColors.darkGray, fontSize: 14, fontFamily: 'Gilroy-M'),
                                 ),
                               ],
@@ -182,13 +178,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           child: Divider(height: 1, color: Color(0xffEDF2F6)),
                         ),
                       ],
-                    ));
-                  } catch (e) {
-                    print('Error processing chat: $e');
-                  }
-                }
-                return ListView(
-                  children: userTiles,
+                    );
+                  },
                 );
               },
             ),
